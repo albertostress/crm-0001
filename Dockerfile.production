@@ -110,6 +110,10 @@ WORKDIR /var/www/html
 # Copy built application from build stage
 COPY --from=build --chown=www-data:www-data /var/www/html .
 
+# Copy EVERTEC branding customizations
+COPY --chown=www-data:www-data client/custom/ /var/www/html/client/custom/
+COPY --chown=www-data:www-data custom/ /var/www/html/custom/
+
 # Create necessary directories with proper permissions
 RUN mkdir -p /var/www/html/data \
     && mkdir -p /var/www/html/custom \
@@ -235,8 +239,30 @@ chmod 0644 /etc/cron.d/espocrm
 # Set proper ownership
 chown -R www-data:www-data /var/www/html/data /var/www/html/custom /var/www/html/upload /var/www/html/client/custom 2>/dev/null || true
 
+# Apply EVERTEC branding customizations
+echo "🎨 Applying EVERTEC branding customizations..."
+if [ -d /var/www/html/client/custom ]; then
+    echo "✅ Custom CSS and JS files found"
+    # Force permissions for custom files
+    chown -R www-data:www-data /var/www/html/client/custom
+    chmod -R 755 /var/www/html/client/custom
+    chmod 644 /var/www/html/client/custom/res/css/custom.css
+    chmod 644 /var/www/html/client/custom/lib/custom-footer.js
+else
+    echo "⚠️ Custom branding files not found"
+fi
+
+if [ -d /var/www/html/custom/Espo ]; then
+    echo "✅ Custom metadata configuration found"
+    chown -R www-data:www-data /var/www/html/custom/Espo
+    chmod -R 755 /var/www/html/custom/Espo
+else
+    echo "⚠️ Custom metadata not found"
+fi
+
 echo "🚀 Starting Apache web server..."
 echo "📍 EspoCRM will be available at: ${ESPOCRM_SITE_URL:-http://localhost}"
+echo "🎨 EVERTEC branding active - EspoCRM watermark removed"
 
 # Start Apache
 exec apache2-foreground
