@@ -98,7 +98,7 @@ RUN if [ -f "package.json" ] && npm run | grep -q "build"; then \
 RUN find . -type d -exec chmod 755 {} \; \
     && find . -type f -exec chmod 644 {} \; \
     && chmod 755 bin/command \
-    && chmod 755 client/build.js
+    && if [ -f "client/build.js" ]; then chmod 755 client/build.js; fi
 
 # Production stage
 FROM base AS production
