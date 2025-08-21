@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  espocrm-local:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: espocrm-local
+    restart: unless-stopped
+    ports:
+      - "8080:80"  # Local port 8080
+    environment:
+      # Database Configuration
+      DB_HOST: database-local
+      DB_PORT: 3306
+      DB_NAME: espocrm
+      DB_USER: espocrm
+      DB_PASSWORD: espocrm123
+      
+      # Application Configuration
+      ESPOCRM_SITE_URL: http://localhost:8080
+      ESPOCRM_ADMIN_USERNAME: admin
+      ESPOCRM_ADMIN_PASSWORD: admin123
+      
+      # Performance
+      PHP_MEMORY_LIMIT: 256M
+      PHP_MAX_EXECUTION_TIME: 180
+    volumes:
+      # Bind mounts for easy editing
+      - ./client/custom:/var/www/html/client/custom
+      - ./custom:/var/www/html/custom
+      - ./data-local:/var/www/html/data
+      - ./upload-local:/var/www/html/upload
+    depends_on:
+      - database-local
+    networks:
+      - espocrm-network
+
+  database-local:
+    image: mariadb:10.11
+    container_name: espocrm-db-local
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: espocrm
+      MYSQL_USER: espocrm
+      MYSQL_PASSWORD: espocrm123
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - db-data-local:/var/lib/mysql
+    ports:
+      - "3307:3306"  # Local MySQL port
+    networks:
+      - espocrm-network
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=200
+
+  phpmyadmin-local:
+    image: phpmyadmin:latest
+    container_name: espocrm-pma-local
+    restart: unless-stopped
+    environment:
+      PMA_HOST: database-local
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+    ports:
+      - "8081:80"  # phpMyAdmin local
+    depends_on:
+      - database-local
+    networks:
+      - espocrm-network
+
+volumes:
+  db-data-local:
+
+networks:
+  espocrm-network:
+    driver: bridge
