@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y \
     git \
     cron \
     supervisor \
+    netcat-traditional \
+    default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
@@ -175,25 +177,59 @@ COPY <<'EOF' /usr/local/bin/docker-entrypoint.sh
 #!/bin/bash
 set -e
 
+echo "Starting EspoCRM container..."
+
 # Wait for database to be ready
-echo "Waiting for database..."
-while ! nc -z ${DB_HOST:-database} ${DB_PORT:-3306}; do
+echo "Checking database connectivity..."
+DB_HOST=${DB_HOST:-database}
+DB_PORT=${DB_PORT:-3306}
+TIMEOUT=60
+COUNTER=0
+
+while ! nc -z "$DB_HOST" "$DB_PORT"; do
+    COUNTER=$((COUNTER + 1))
+    if [ $COUNTER -gt $TIMEOUT ]; then
+        echo "❌ Database connection timeout after ${TIMEOUT} seconds"
+        exit 1
+    fi
+    echo "⏳ Waiting for database... (${COUNTER}/${TIMEOUT})"
     sleep 1
 done
-echo "Database is ready!"
+echo "✅ Database is ready!"
 
-# Run EspoCRM rebuild if needed
-if [ -f /var/www/html/data/config.php ]; then
-    echo "Running rebuild..."
-    su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild" www-data
+# Wait a bit more for database to be fully ready
+sleep 5
+
+# Check if this is the first run (no config exists)
+if [ ! -f /var/www/html/data/config.php ]; then
+    echo "🔧 First run detected - EspoCRM will need initial setup"
+    echo "🌐 Visit your domain to complete the installation wizard"
+else
+    echo "✅ Configuration found - running maintenance tasks"
+    
+    # Run EspoCRM rebuild if needed
+    echo "🔄 Running EspoCRM rebuild..."
+    su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild --verbose" www-data || true
+    
+    # Clear cache
+    echo "🧹 Clearing cache..."
+    su -s /bin/bash -c "cd /var/www/html && php bin/command clear-cache" www-data || true
 fi
 
 # Start cron service
+echo "⏰ Starting cron service..."
 service cron start
 
-# Configure cron for EspoCRM
+# Configure cron for EspoCRM (run every minute)
+echo "📅 Setting up EspoCRM scheduled jobs..."
 echo "* * * * * www-data cd /var/www/html && php bin/command run-job > /dev/null 2>&1" > /etc/cron.d/espocrm
 chmod 0644 /etc/cron.d/espocrm
+
+# Set proper ownership
+chown -R www-data:www-data /var/www/html/data /var/www/html/custom /var/www/html/upload /var/www/html/client/custom 2>/dev/null || true
+
+echo "🚀 Starting Apache web server..."
+echo "📍 EspoCRM will be available at: ${ESPOCRM_SITE_URL:-http://localhost}"
 
 # Start Apache
 exec apache2-foreground
