@@ -1,0 +1,209 @@
+# Multi-stage Dockerfile for EspoCRM Production
+FROM php:8.2-apache AS base
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
+    libxpm-dev \
+    libzip-dev \
+    libicu-dev \
+    libldap2-dev \
+    libxml2-dev \
+    libcurl4-openssl-dev \
+    libonig-dev \
+    curl \
+    wget \
+    zip \
+    unzip \
+    git \
+    cron \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-configure gd \
+    --with-freetype \
+    --with-jpeg \
+    --with-webp \
+    --with-xpm \
+    && docker-php-ext-install -j$(nproc) \
+    gd \
+    pdo \
+    pdo_mysql \
+    mysqli \
+    zip \
+    intl \
+    ldap \
+    soap \
+    bcmath \
+    opcache \
+    pcntl \
+    exif \
+    curl \
+    mbstring \
+    iconv \
+    xml
+
+# Install Node.js and npm for building frontend assets
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
+
+# Configure Apache
+RUN a2enmod rewrite headers expires deflate ssl
+RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+# Configure PHP
+COPY <<EOF /usr/local/etc/php/conf.d/espocrm.ini
+memory_limit = 256M
+upload_max_filesize = 50M
+post_max_size = 50M
+max_execution_time = 180
+max_input_time = 180
+display_errors = Off
+log_errors = On
+error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
+date.timezone = UTC
+session.gc_maxlifetime = 86400
+opcache.enable = 1
+opcache.memory_consumption = 256
+opcache.max_accelerated_files = 20000
+opcache.revalidate_freq = 0
+opcache.validate_timestamps = 0
+EOF
+
+# Build stage
+FROM base AS build
+
+WORKDIR /var/www/html
+
+# Copy application files
+COPY . .
+
+# Install composer dependencies
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Build frontend assets
+RUN npm ci --no-audit --no-fund
+RUN npm run build
+
+# Set proper permissions
+RUN find . -type d -exec chmod 755 {} \; \
+    && find . -type f -exec chmod 644 {} \; \
+    && chmod 755 bin/command \
+    && chmod 755 client/build.js
+
+# Production stage
+FROM base AS production
+
+WORKDIR /var/www/html
+
+# Copy built application from build stage
+COPY --from=build --chown=www-data:www-data /var/www/html .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /var/www/html/data \
+    && mkdir -p /var/www/html/custom \
+    && mkdir -p /var/www/html/client/custom \
+    && mkdir -p /var/www/html/upload \
+    && chown -R www-data:www-data /var/www/html/data \
+    && chown -R www-data:www-data /var/www/html/custom \
+    && chown -R www-data:www-data /var/www/html/client/custom \
+    && chown -R www-data:www-data /var/www/html/upload \
+    && chmod -R 775 /var/www/html/data \
+    && chmod -R 775 /var/www/html/custom \
+    && chmod -R 775 /var/www/html/upload
+
+# Configure Apache virtual host
+COPY <<EOF /etc/apache2/sites-available/000-default.conf
+<VirtualHost *:80>
+    DocumentRoot /var/www/html/public
+    
+    <Directory /var/www/html/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    ErrorLog \${APACHE_LOG_DIR}/error.log
+    CustomLog \${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
+
+# Create health check script
+COPY <<'EOF' /usr/local/bin/healthcheck.php
+<?php
+// Simple health check for EspoCRM
+try {
+    // Check if config exists
+    if (!file_exists('/var/www/html/data/config.php')) {
+        http_response_code(503);
+        echo json_encode(['status' => 'error', 'message' => 'Configuration not found']);
+        exit(1);
+    }
+    
+    // Try to include config
+    $config = include('/var/www/html/data/config.php');
+    
+    // Check database connection if config exists
+    if (isset($config['database'])) {
+        $dsn = "mysql:host={$config['database']['host']};port={$config['database']['port']};dbname={$config['database']['dbname']}";
+        $pdo = new PDO($dsn, $config['database']['user'], $config['database']['password']);
+        $pdo->query('SELECT 1');
+    }
+    
+    http_response_code(200);
+    echo json_encode(['status' => 'healthy', 'timestamp' => time()]);
+} catch (Exception $e) {
+    http_response_code(503);
+    echo json_encode(['status' => 'unhealthy', 'error' => $e->getMessage()]);
+    exit(1);
+}
+EOF
+
+RUN chmod +x /usr/local/bin/healthcheck.php
+
+# Create startup script
+COPY <<'EOF' /usr/local/bin/docker-entrypoint.sh
+#!/bin/bash
+set -e
+
+# Wait for database to be ready
+echo "Waiting for database..."
+while ! nc -z ${DB_HOST:-database} ${DB_PORT:-3306}; do
+    sleep 1
+done
+echo "Database is ready!"
+
+# Run EspoCRM rebuild if needed
+if [ -f /var/www/html/data/config.php ]; then
+    echo "Running rebuild..."
+    su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild" www-data
+fi
+
+# Start cron service
+service cron start
+
+# Configure cron for EspoCRM
+echo "* * * * * www-data cd /var/www/html && php bin/command run-job > /dev/null 2>&1" > /etc/cron.d/espocrm
+chmod 0644 /etc/cron.d/espocrm
+
+# Start Apache
+exec apache2-foreground
+EOF
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD php /usr/local/bin/healthcheck.php || exit 1
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

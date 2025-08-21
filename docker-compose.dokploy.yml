@@ -1,0 +1,190 @@
+version: "3.8"
+
+services:
+  espocrm:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - VCS_REF=${VCS_REF:-$(git rev-parse --short HEAD)}
+    restart: unless-stopped
+    environment:
+      # Database Configuration
+      DB_HOST: ${DB_HOST:-database}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-espocrm}
+      DB_USER: ${DB_USER:-espocrm}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # Application Configuration
+      ESPOCRM_SITE_URL: ${ESPOCRM_SITE_URL:-https://crm.yourdomain.com}
+      ESPOCRM_ADMIN_USERNAME: ${ESPOCRM_ADMIN_USERNAME:-admin}
+      ESPOCRM_ADMIN_PASSWORD: ${ESPOCRM_ADMIN_PASSWORD}
+      ESPOCRM_LANGUAGE: ${ESPOCRM_LANGUAGE:-en_US}
+      ESPOCRM_TIMEZONE: ${ESPOCRM_TIMEZONE:-UTC}
+      
+      # Email Configuration
+      ESPOCRM_SMTP_SERVER: ${ESPOCRM_SMTP_SERVER}
+      ESPOCRM_SMTP_PORT: ${ESPOCRM_SMTP_PORT:-587}
+      ESPOCRM_SMTP_AUTH: ${ESPOCRM_SMTP_AUTH:-true}
+      ESPOCRM_SMTP_SECURITY: ${ESPOCRM_SMTP_SECURITY:-TLS}
+      ESPOCRM_SMTP_USERNAME: ${ESPOCRM_SMTP_USERNAME}
+      ESPOCRM_SMTP_PASSWORD: ${ESPOCRM_SMTP_PASSWORD}
+      ESPOCRM_OUTBOUND_EMAIL_FROM_ADDRESS: ${ESPOCRM_OUTBOUND_EMAIL_FROM_ADDRESS}
+      
+      # Performance
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-256M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-180}
+      PHP_MAX_INPUT_TIME: ${PHP_MAX_INPUT_TIME:-180}
+    volumes:
+      # Persistent data volumes using Dokploy's files directory
+      - ../files/espocrm-data:/var/www/html/data
+      - ../files/espocrm-custom:/var/www/html/custom
+      - ../files/espocrm-client-custom:/var/www/html/client/custom
+      - ../files/espocrm-upload:/var/www/html/upload
+    expose:
+      - 80
+    depends_on:
+      - database
+      - redis
+    networks:
+      - dokploy-network
+    labels:
+      # Traefik configuration for domain routing
+      - "traefik.enable=true"
+      - "traefik.http.routers.espocrm.rule=Host(`${DOMAIN:-crm.yourdomain.com}`)"
+      - "traefik.http.routers.espocrm.entrypoints=websecure"
+      - "traefik.http.routers.espocrm.tls=true"
+      - "traefik.http.routers.espocrm.tls.certresolver=letsencrypt"
+      - "traefik.http.services.espocrm.loadbalancer.server.port=80"
+      # Health check for zero-downtime deployments
+      - "traefik.http.services.espocrm.loadbalancer.healthcheck.path=/api/v1/health"
+      - "traefik.http.services.espocrm.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.espocrm.loadbalancer.healthcheck.timeout=10s"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  database:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-espocrm}
+      MYSQL_USER: ${DB_USER:-espocrm}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      # Persistent database storage
+      - ../files/mariadb-data:/var/lib/mysql
+      - ../files/mariadb-backup:/backup
+    expose:
+      - 3306
+    networks:
+      - dokploy-network
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_connections=200
+      --innodb_buffer_pool_size=256M
+      --innodb_log_file_size=64M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
+      --query_cache_type=1
+      --query_cache_size=32M
+      --query_cache_limit=2M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ../files/redis-data:/data
+    expose:
+      - 6379
+    networks:
+      - dokploy-network
+    command: >
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # Optional: phpMyAdmin for database management
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: 50M
+    expose:
+      - 80
+    depends_on:
+      - database
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.phpmyadmin.rule=Host(`${PMA_DOMAIN:-pma.yourdomain.com}`)"
+      - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+      - "traefik.http.routers.phpmyadmin.tls=true"
+      - "traefik.http.routers.phpmyadmin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.phpmyadmin.loadbalancer.server.port=80"
+      # Basic auth for security (configure in Dokploy)
+      - "traefik.http.routers.phpmyadmin.middlewares=auth"
+
+  # Backup service
+  backup:
+    image: alpine:latest
+    restart: "no"
+    depends_on:
+      - database
+    volumes:
+      - ../files/mariadb-backup:/backup
+      - ../files/espocrm-data:/data/espocrm-data:ro
+      - ../files/espocrm-upload:/data/espocrm-upload:ro
+      - ../files/espocrm-custom:/data/espocrm-custom:ro
+    networks:
+      - dokploy-network
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache mysql-client tar gzip
+        echo "Starting backup..."
+        DATE=$$(date +%Y%m%d_%H%M%S)
+        
+        # Database backup
+        echo "Backing up database..."
+        mysqldump -h database -u ${DB_USER:-espocrm} -p${DB_PASSWORD} ${DB_NAME:-espocrm} | gzip > /backup/db_backup_$$DATE.sql.gz
+        
+        # Files backup
+        echo "Backing up files..."
+        tar -czf /backup/files_backup_$$DATE.tar.gz /data/
+        
+        # Keep only last 7 days of backups
+        find /backup -name "*.gz" -mtime +7 -delete
+        
+        echo "Backup completed successfully!"
+
+networks:
+  dokploy-network:
+    external: true
