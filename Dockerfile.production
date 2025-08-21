@@ -47,10 +47,10 @@ RUN docker-php-ext-configure gd \
     iconv \
     xml
 
-# Install Node.js and npm for building frontend assets
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g npm@latest
+# Install Node.js only if needed for build (EspoCRM comes with pre-built assets)
+# Using NodeJS from official repos for better compatibility
+RUN apt-get update && apt-get install -y nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
 
 # Configure Apache
 RUN a2enmod rewrite headers expires deflate ssl
@@ -87,9 +87,12 @@ COPY . .
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Build frontend assets
-RUN npm ci --no-audit --no-fund
-RUN npm run build
+# Build frontend assets (if package.json exists and has build script)
+RUN if [ -f "package.json" ] && npm run | grep -q "build"; then \
+        npm ci --no-audit --no-fund && npm run build; \
+    else \
+        echo "No build script found or package.json missing, skipping frontend build"; \
+    fi
 
 # Set proper permissions
 RUN find . -type d -exec chmod 755 {} \; \
