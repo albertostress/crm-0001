@@ -331,6 +331,16 @@ RUN mkdir -p /var/www/html/data \
     && chmod -R 775 /var/www/html/custom \
     && chmod -R 775 /var/www/html/upload
 
+# AGGRESSIVE: Replace EspoCRM in core files during build
+RUN echo "🔨 Removing EspoCRM watermark from core files..." \
+    && find /var/www/html -type f \( -name "*.php" -o -name "*.js" -o -name "*.tpl" \) \
+        -not -path "*/vendor/*" \
+        -not -path "*/node_modules/*" \
+        -not -path "*/tests/*" \
+        -exec sed -i 's/EspoCRM/EVERTEC CRM/g' {} \; \
+        -exec sed -i 's/espocrm\.com/evertec.com/g' {} \; 2>/dev/null || true \
+    && echo "✅ Core files patched"
+
 # Configure Apache virtual host
 COPY <<EOF /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:80>
@@ -446,43 +456,62 @@ chown -R www-data:www-data /var/www/html/data /var/www/html/custom /var/www/html
 # Apply EVERTEC branding customizations
 echo "🎨 Applying EVERTEC branding customizations..."
 
-# Check and list actual files
-echo "📁 Checking for custom files..."
-ls -la /var/www/html/client/custom/ 2>/dev/null || echo "❌ /var/www/html/client/custom/ not found"
-
+# Set proper permissions for custom files
 if [ -d /var/www/html/client/custom ]; then
-    echo "✅ Custom directory found"
+    echo "✅ Setting permissions for custom files..."
     chown -R www-data:www-data /var/www/html/client/custom
     chmod -R 755 /var/www/html/client/custom
-    
-    # Check specific files
-    if [ -f /var/www/html/client/custom/res/css/custom.css ]; then
-        echo "✅ Custom CSS found"
-        chmod 644 /var/www/html/client/custom/res/css/custom.css
-    else
-        echo "❌ Custom CSS not found"
-        ls -la /var/www/html/client/custom/res/css/ 2>/dev/null || echo "❌ CSS directory not found"
-    fi
-    
-    if [ -f /var/www/html/client/custom/lib/custom-footer.js ]; then
-        echo "✅ Custom JS found"
-        chmod 644 /var/www/html/client/custom/lib/custom-footer.js
-    else
-        echo "❌ Custom JS not found"
-        ls -la /var/www/html/client/custom/lib/ 2>/dev/null || echo "❌ JS directory not found"
-    fi
-else
-    echo "❌ Custom client directory not found"
+    find /var/www/html/client/custom -type f -name "*.css" -exec chmod 644 {} \;
+    find /var/www/html/client/custom -type f -name "*.js" -exec chmod 644 {} \;
 fi
 
-if [ -d /var/www/html/custom/Espo ]; then
-    echo "✅ Custom metadata configuration found"
-    chown -R www-data:www-data /var/www/html/custom/Espo
-    chmod -R 755 /var/www/html/custom/Espo
-else
-    echo "❌ Custom metadata not found"
-    ls -la /var/www/html/custom/ 2>/dev/null || echo "❌ Custom directory not found"
+if [ -d /var/www/html/custom ]; then
+    echo "✅ Setting permissions for metadata..."
+    chown -R www-data:www-data /var/www/html/custom
+    chmod -R 755 /var/www/html/custom
 fi
+
+# FORCE: Replace EspoCRM references in core files (backup first)
+echo "🔧 Patching core files to remove EspoCRM watermark..."
+
+# Find and replace in PHP files
+find /var/www/html -type f -name "*.php" -exec grep -l "EspoCRM" {} \; 2>/dev/null | while read file; do
+    if [[ ! "$file" =~ vendor|tests|data|upload ]]; then
+        echo "  Patching: $file"
+        sed -i.bak 's/EspoCRM/EVERTEC CRM/g' "$file"
+        sed -i 's/espocrm\.com/evertec.com/g' "$file"
+    fi
+done
+
+# Find and replace in JavaScript files
+find /var/www/html/client -type f -name "*.js" -exec grep -l "EspoCRM" {} \; 2>/dev/null | while read file; do
+    if [[ ! "$file" =~ node_modules|vendor ]]; then
+        echo "  Patching: $file"
+        sed -i.bak 's/EspoCRM/EVERTEC CRM/g' "$file"
+        sed -i 's/espocrm\.com/evertec.com/g' "$file"
+    fi
+done
+
+# Find and replace in template files
+find /var/www/html -type f -name "*.tpl" -exec grep -l "EspoCRM" {} \; 2>/dev/null | while read file; do
+    echo "  Patching: $file"
+    sed -i.bak 's/EspoCRM/EVERTEC CRM/g' "$file"
+    sed -i 's/espocrm\.com/evertec.com/g' "$file"
+done
+
+# Clear all caches to force reload
+echo "🧹 Clearing all caches..."
+rm -rf /var/www/html/data/cache/* 2>/dev/null || true
+rm -rf /var/www/html/client/lib/templates.tpl 2>/dev/null || true
+rm -rf /var/www/html/data/upload/thumbnails/* 2>/dev/null || true
+
+# Force rebuild after customizations
+if [ -f /var/www/html/data/config.php ]; then
+    echo "🔄 Force rebuilding with customizations..."
+    su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild" www-data || true
+fi
+
+echo "✅ EVERTEC branding applied successfully!"
 
 echo "🚀 Starting Apache web server..."
 echo "📍 EspoCRM will be available at: ${ESPOCRM_SITE_URL:-http://localhost}"
