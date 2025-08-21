@@ -214,7 +214,7 @@ EOF
 COPY <<'EOF' /var/www/html/client/custom/lib/custom-footer.js
 /**
  * EVERTEC CRM - Watermark Removal and Branding Replacement
- * Version: 2.0 - Dokploy Production
+ * Version: 3.0 - Ultra Aggressive
  */
 (function() {
     'use strict';
@@ -223,36 +223,77 @@ COPY <<'EOF' /var/www/html/client/custom/lib/custom-footer.js
     
     function replaceEspoCrmBranding() {
         try {
+            // Expanded list of selectors
             const selectors = [
                 '.credit.small',
                 '.credit',
                 'p.credit',
+                'p.credit.small',
                 '#footer .credit',
                 'footer .credit',
                 '.layout__sidebar .credit',
-                '.sidebar .credit'
+                '.sidebar .credit',
+                '.navbar-footer .credit',
+                '.main-footer .credit',
+                'div[data-name="footer"]',
+                '.footer-text',
+                '.copyright',
+                '*[class*="credit"]',
+                '*[class*="footer"]'
             ];
             
             selectors.forEach(selector => {
                 const elements = document.querySelectorAll(selector);
                 elements.forEach(element => {
-                    if (element.textContent && 
-                        (element.textContent.includes('EspoCRM') || 
-                         element.textContent.includes('espocrm.com'))) {
+                    const text = element.textContent || '';
+                    const html = element.innerHTML || '';
+                    
+                    if (text.includes('EspoCRM') || 
+                        text.includes('espocrm') ||
+                        html.includes('espocrm.com') ||
+                        html.includes('EspoCRM')) {
+                        
                         element.innerHTML = EVERTEC_BRANDING;
                         element.style.textAlign = 'center';
                         element.style.color = '#999';
                         element.style.fontSize = '13px';
+                        element.style.display = 'block';
                         element.classList.add('evertec-footer');
+                        
+                        // Remove any child links
+                        const links = element.querySelectorAll('a');
+                        links.forEach(link => link.remove());
                     }
                 });
             });
             
-            // Remove links diretos para espocrm.com
-            const links = document.querySelectorAll('a[href*="espocrm.com"]');
-            links.forEach(link => {
-                link.style.display = 'none';
-                link.style.visibility = 'hidden';
+            // Force replace all text nodes containing EspoCRM
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            while (node = walker.nextNode()) {
+                if (node.nodeValue && node.nodeValue.includes('EspoCRM')) {
+                    node.nodeValue = node.nodeValue.replace(/EspoCRM/g, 'EVERTEC CRM');
+                }
+            }
+            
+            // Remove all links to espocrm.com
+            document.querySelectorAll('a[href*="espocrm.com"]').forEach(link => {
+                link.remove();
+            });
+            
+            // Check for dynamically loaded content
+            const containers = document.querySelectorAll('.container-footer, .page-footer, #footer');
+            containers.forEach(container => {
+                if (container.innerHTML.includes('EspoCRM')) {
+                    container.innerHTML = container.innerHTML.replace(/EspoCRM/g, 'EVERTEC CRM');
+                    container.innerHTML = container.innerHTML.replace(/espocrm\.com/g, 'evertec.com');
+                }
             });
             
         } catch (error) {
@@ -260,48 +301,69 @@ COPY <<'EOF' /var/www/html/client/custom/lib/custom-footer.js
         }
     }
     
-    // Inicialização
+    // Run immediately
+    replaceEspoCrmBranding();
+    
+    // Run on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', replaceEspoCrmBranding);
-    } else {
-        replaceEspoCrmBranding();
     }
     
-    // Execução periódica
-    setInterval(replaceEspoCrmBranding, 1000);
+    // Run on page load
+    window.addEventListener('load', replaceEspoCrmBranding);
     
-    // Observer para mudanças no DOM
-    if (typeof MutationObserver !== 'undefined' && document.body) {
-        const observer = new MutationObserver(function(mutations) {
-            let shouldReplace = false;
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    shouldReplace = true;
-                }
-            });
-            if (shouldReplace) {
-                setTimeout(replaceEspoCrmBranding, 100);
+    // Run periodically (every 500ms for aggressive replacement)
+    setInterval(replaceEspoCrmBranding, 500);
+    
+    // Observer for ANY DOM changes
+    if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(function() {
+            replaceEspoCrmBranding();
+        });
+        
+        // Start observing when body is available
+        const startObserving = function() {
+            if (document.body) {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    characterData: true
+                });
+            } else {
+                setTimeout(startObserving, 100);
             }
-        });
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        };
+        startObserving();
     }
-})();
-
-// Fallback simples
-(function() {
-    const fallbackReplace = function() {
-        const credits = document.querySelectorAll('.credit');
-        credits.forEach(function(credit) {
-            if (credit.textContent.includes('EspoCRM')) {
-                credit.innerHTML = '© 2025 EVERTEC CRM — Todos os direitos reservados';
-            }
+    
+    // Hook into AJAX responses to replace content
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function() {
+        this.addEventListener('load', function() {
+            setTimeout(replaceEspoCrmBranding, 100);
+        });
+        originalOpen.apply(this, arguments);
+    };
+    
+    // Hook into fetch responses
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        return originalFetch.apply(this, arguments).then(function(response) {
+            setTimeout(replaceEspoCrmBranding, 100);
+            return response;
         });
     };
-    setInterval(fallbackReplace, 2000);
 })();
+
+// Secondary fallback that runs every second
+setInterval(function() {
+    document.querySelectorAll('*').forEach(function(element) {
+        if (element.innerHTML && element.innerHTML.includes('EspoCRM')) {
+            element.innerHTML = element.innerHTML.replace(/EspoCRM/g, 'EVERTEC CRM');
+        }
+    });
+}, 1000);
 EOF
 
 # Create metadata configuration
@@ -505,11 +567,50 @@ rm -rf /var/www/html/data/cache/* 2>/dev/null || true
 rm -rf /var/www/html/client/lib/templates.tpl 2>/dev/null || true
 rm -rf /var/www/html/data/upload/thumbnails/* 2>/dev/null || true
 
+# Create templates.tpl file if it doesn't exist
+echo "📄 Creating templates file..."
+touch /var/www/html/client/lib/templates.tpl
+chown www-data:www-data /var/www/html/client/lib/templates.tpl
+chmod 644 /var/www/html/client/lib/templates.tpl
+
 # Force rebuild after customizations
 if [ -f /var/www/html/data/config.php ]; then
     echo "🔄 Force rebuilding with customizations..."
     su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild" www-data || true
 fi
+
+# Additional aggressive patching for specific footer locations
+echo "🎯 Targeting specific footer locations..."
+
+# Patch the main application footer template
+if [ -f /var/www/html/client/res/templates/footer.tpl ]; then
+    sed -i 's/EspoCRM/EVERTEC CRM/g' /var/www/html/client/res/templates/footer.tpl
+    sed -i 's/espocrm\.com/evertec.com/g' /var/www/html/client/res/templates/footer.tpl
+fi
+
+# Patch login footer
+find /var/www/html -name "login.tpl" -o -name "login.php" | while read file; do
+    echo "  Patching login: $file"
+    sed -i 's/EspoCRM/EVERTEC CRM/g' "$file"
+    sed -i 's/espocrm\.com/evertec.com/g' "$file"
+done
+
+# Patch all JSON language files
+find /var/www/html -name "*.json" -path "*/i18n/*" | while read file; do
+    sed -i 's/EspoCRM/EVERTEC CRM/g' "$file" 2>/dev/null || true
+done
+
+# Create override CSS that's injected everywhere
+cat > /var/www/html/client/css/espo/custom-override.css << 'EOFCSS'
+/* EVERTEC Override - Force remove EspoCRM */
+.credit a[href*="espocrm"] { display: none !important; }
+.credit::after { content: "© 2025 EVERTEC CRM — Todos os direitos reservados" !important; }
+body:not(.login-page) .credit { font-size: 0 !important; }
+body:not(.login-page) .credit::after { font-size: 12px !important; display: block !important; }
+EOFCSS
+
+chown www-data:www-data /var/www/html/client/css/espo/custom-override.css
+chmod 644 /var/www/html/client/css/espo/custom-override.css
 
 echo "✅ EVERTEC branding applied successfully!"
 
