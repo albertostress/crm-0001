@@ -126,18 +126,25 @@ RUN mkdir -p /var/www/html/data \
 # Configure Apache virtual host
 COPY <<EOF /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:80>
-    DocumentRoot /var/www/html/public
+    ServerName crm.kiandaedge.online
+    DocumentRoot /var/www/html
     
-    <Directory /var/www/html/public>
+    <Directory /var/www/html>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
     
+    # Health check endpoint
+    Alias /api/v1/health /var/www/html/public/api/v1/health.php
+    
     ErrorLog \${APACHE_LOG_DIR}/error.log
     CustomLog \${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 EOF
+
+# Set Apache ServerName globally to suppress warning
+RUN echo "ServerName crm.kiandaedge.online" >> /etc/apache2/apache2.conf
 
 # Create health check script
 COPY <<'EOF' /usr/local/bin/healthcheck.php
