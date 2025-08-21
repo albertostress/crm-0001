@@ -85,6 +85,11 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
+# Ensure custom directories exist and copy customizations
+RUN mkdir -p client/custom/res/css client/custom/lib custom/Espo/Custom/Resources/metadata/app
+COPY client/custom/ client/custom/
+COPY custom/ custom/
+
 # Install composer dependencies
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction
@@ -110,9 +115,208 @@ WORKDIR /var/www/html
 # Copy built application from build stage
 COPY --from=build --chown=www-data:www-data /var/www/html .
 
-# Copy EVERTEC branding customizations
-COPY --chown=www-data:www-data client/custom/ /var/www/html/client/custom/
-COPY --chown=www-data:www-data custom/ /var/www/html/custom/
+# Create EVERTEC branding customizations directly
+RUN mkdir -p /var/www/html/client/custom/res/css \
+    && mkdir -p /var/www/html/client/custom/lib \
+    && mkdir -p /var/www/html/custom/Espo/Custom/Resources/metadata/app
+
+# Create custom CSS file
+COPY <<'EOF' /var/www/html/client/custom/res/css/custom.css
+/* Remove completamente o watermark EspoCRM em TODOS os lugares */
+/* Customização para EVERTEC - Deployment Dokploy */
+
+/* Página de login - esconde o link original */
+.credit.small a,
+p.credit.small a,
+.credit a,
+footer .credit a,
+#footer .credit a {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+/* Remove texto "EspoCRM" completamente */
+.credit.small,
+p.credit.small,
+.credit,
+footer .credit,
+#footer .credit {
+    font-size: 0 !important;
+    color: transparent !important;
+}
+
+/* Página de login - adiciona novo texto */
+.credit.small::after,
+p.credit.small::after,
+.credit::after,
+footer .credit::after,
+#footer .credit::after {
+    content: "© 2025 EVERTEC CRM — Todos os direitos reservados" !important;
+    display: block !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    color: #999 !important;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+    margin: 10px 0 !important;
+    padding: 5px 0 !important;
+    line-height: 1.4 !important;
+    opacity: 0.8 !important;
+}
+
+/* Sidebar após login */
+.layout__sidebar .credit,
+.layout__sidebar .copyright,
+.sidebar .credit,
+.sidebar .copyright,
+.navbar .credit,
+.main-footer .credit {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Adiciona texto no sidebar */
+.layout__sidebar::after,
+.sidebar::after {
+    content: "© 2025 EVERTEC CRM — Todos os direitos reservados" !important;
+    display: block !important;
+    text-align: center !important;
+    opacity: 0.7 !important;
+    padding: 10px 0 !important;
+    font-size: 12px !important;
+    color: #bbb !important;
+    border-top: 1px solid #eee !important;
+    margin-top: 20px !important;
+}
+
+/* Remove qualquer footer com EspoCRM */
+[data-name="footer"] .credit,
+.page-footer .credit,
+.app-footer .credit {
+    display: none !important;
+}
+
+/* Remove EspoCRM de modais e popups */
+.modal .credit,
+.popup .credit,
+.dialog .credit {
+    display: none !important;
+}
+
+/* Esconde links para espocrm.com */
+a[href*="espocrm.com" i] {
+    display: none !important;
+    visibility: hidden !important;
+}
+EOF
+
+# Create custom JavaScript file
+COPY <<'EOF' /var/www/html/client/custom/lib/custom-footer.js
+/**
+ * EVERTEC CRM - Watermark Removal and Branding Replacement
+ * Version: 2.0 - Dokploy Production
+ */
+(function() {
+    'use strict';
+    
+    const EVERTEC_BRANDING = '© 2025 EVERTEC CRM — Todos os direitos reservados';
+    
+    function replaceEspoCrmBranding() {
+        try {
+            const selectors = [
+                '.credit.small',
+                '.credit',
+                'p.credit',
+                '#footer .credit',
+                'footer .credit',
+                '.layout__sidebar .credit',
+                '.sidebar .credit'
+            ];
+            
+            selectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    if (element.textContent && 
+                        (element.textContent.includes('EspoCRM') || 
+                         element.textContent.includes('espocrm.com'))) {
+                        element.innerHTML = EVERTEC_BRANDING;
+                        element.style.textAlign = 'center';
+                        element.style.color = '#999';
+                        element.style.fontSize = '13px';
+                        element.classList.add('evertec-footer');
+                    }
+                });
+            });
+            
+            // Remove links diretos para espocrm.com
+            const links = document.querySelectorAll('a[href*="espocrm.com"]');
+            links.forEach(link => {
+                link.style.display = 'none';
+                link.style.visibility = 'hidden';
+            });
+            
+        } catch (error) {
+            console.error('[EVERTEC Branding] Error:', error);
+        }
+    }
+    
+    // Inicialização
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', replaceEspoCrmBranding);
+    } else {
+        replaceEspoCrmBranding();
+    }
+    
+    // Execução periódica
+    setInterval(replaceEspoCrmBranding, 1000);
+    
+    // Observer para mudanças no DOM
+    if (typeof MutationObserver !== 'undefined' && document.body) {
+        const observer = new MutationObserver(function(mutations) {
+            let shouldReplace = false;
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    shouldReplace = true;
+                }
+            });
+            if (shouldReplace) {
+                setTimeout(replaceEspoCrmBranding, 100);
+            }
+        });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+})();
+
+// Fallback simples
+(function() {
+    const fallbackReplace = function() {
+        const credits = document.querySelectorAll('.credit');
+        credits.forEach(function(credit) {
+            if (credit.textContent.includes('EspoCRM')) {
+                credit.innerHTML = '© 2025 EVERTEC CRM — Todos os direitos reservados';
+            }
+        });
+    };
+    setInterval(fallbackReplace, 2000);
+})();
+EOF
+
+# Create metadata configuration
+COPY <<'EOF' /var/www/html/custom/Espo/Custom/Resources/metadata/app/client.json
+{
+    "cssList": [
+        "__APPEND__",
+        "client/custom/res/css/custom.css"
+    ],
+    "scriptList": [
+        "__APPEND__",
+        "client/custom/lib/custom-footer.js"
+    ]
+}
+EOF
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /var/www/html/data \
@@ -220,7 +424,7 @@ else
     
     # Run EspoCRM rebuild if needed
     echo "🔄 Running EspoCRM rebuild..."
-    su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild --verbose" www-data || true
+    su -s /bin/bash -c "cd /var/www/html && php bin/command rebuild" www-data || true
     
     # Clear cache
     echo "🧹 Clearing cache..."
@@ -241,15 +445,34 @@ chown -R www-data:www-data /var/www/html/data /var/www/html/custom /var/www/html
 
 # Apply EVERTEC branding customizations
 echo "🎨 Applying EVERTEC branding customizations..."
+
+# Check and list actual files
+echo "📁 Checking for custom files..."
+ls -la /var/www/html/client/custom/ 2>/dev/null || echo "❌ /var/www/html/client/custom/ not found"
+
 if [ -d /var/www/html/client/custom ]; then
-    echo "✅ Custom CSS and JS files found"
-    # Force permissions for custom files
+    echo "✅ Custom directory found"
     chown -R www-data:www-data /var/www/html/client/custom
     chmod -R 755 /var/www/html/client/custom
-    chmod 644 /var/www/html/client/custom/res/css/custom.css
-    chmod 644 /var/www/html/client/custom/lib/custom-footer.js
+    
+    # Check specific files
+    if [ -f /var/www/html/client/custom/res/css/custom.css ]; then
+        echo "✅ Custom CSS found"
+        chmod 644 /var/www/html/client/custom/res/css/custom.css
+    else
+        echo "❌ Custom CSS not found"
+        ls -la /var/www/html/client/custom/res/css/ 2>/dev/null || echo "❌ CSS directory not found"
+    fi
+    
+    if [ -f /var/www/html/client/custom/lib/custom-footer.js ]; then
+        echo "✅ Custom JS found"
+        chmod 644 /var/www/html/client/custom/lib/custom-footer.js
+    else
+        echo "❌ Custom JS not found"
+        ls -la /var/www/html/client/custom/lib/ 2>/dev/null || echo "❌ JS directory not found"
+    fi
 else
-    echo "⚠️ Custom branding files not found"
+    echo "❌ Custom client directory not found"
 fi
 
 if [ -d /var/www/html/custom/Espo ]; then
@@ -257,7 +480,8 @@ if [ -d /var/www/html/custom/Espo ]; then
     chown -R www-data:www-data /var/www/html/custom/Espo
     chmod -R 755 /var/www/html/custom/Espo
 else
-    echo "⚠️ Custom metadata not found"
+    echo "❌ Custom metadata not found"
+    ls -la /var/www/html/custom/ 2>/dev/null || echo "❌ Custom directory not found"
 fi
 
 echo "🚀 Starting Apache web server..."
