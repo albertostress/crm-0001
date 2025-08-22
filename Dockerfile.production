@@ -55,8 +55,12 @@ RUN apt-get update && apt-get install -y nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure Apache
-RUN a2enmod rewrite headers expires deflate ssl
-RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+RUN a2enmod rewrite headers expires deflate ssl && \
+    sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf && \
+    echo '<Directory /var/www/html>' >> /etc/apache2/apache2.conf && \
+    echo '  AllowOverride All' >> /etc/apache2/apache2.conf && \
+    echo '  Require all granted' >> /etc/apache2/apache2.conf && \
+    echo '</Directory>' >> /etc/apache2/apache2.conf
 
 # Configure PHP
 COPY <<EOF /usr/local/etc/php/conf.d/espocrm.ini
@@ -516,6 +520,19 @@ chmod 0644 /etc/cron.d/espocrm
 
 # Set proper ownership
 chown -R www-data:www-data /var/www/html/data /var/www/html/custom /var/www/html/upload /var/www/html/client/custom 2>/dev/null || true
+
+# Create symbolic link for client directory if using /public/
+if [ -d /var/www/html/public ] && [ ! -L /var/www/html/public/client ]; then
+    echo "🔗 Creating symbolic link for client directory..."
+    ln -s /var/www/html/client /var/www/html/public/client
+fi
+
+# Create index.php redirect if needed
+if [ ! -f /var/www/html/index.php ] && [ -d /var/www/html/public ]; then
+    echo "↪️ Creating redirect from root to /public/..."
+    echo '<?php header("Location: /public/"); exit;' > /var/www/html/index.php
+    chown www-data:www-data /var/www/html/index.php
+fi
 
 # Apply EVERTEC branding customizations
 echo "🎨 Applying EVERTEC branding customizations..."

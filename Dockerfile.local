@@ -3,7 +3,12 @@
 FROM espocrm/espocrm:latest
 
 # Configurações do Apache
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
+    a2enmod rewrite && \
+    echo '<Directory /var/www/html>' >> /etc/apache2/apache2.conf && \
+    echo '  AllowOverride All' >> /etc/apache2/apache2.conf && \
+    echo '  Require all granted' >> /etc/apache2/apache2.conf && \
+    echo '</Directory>' >> /etc/apache2/apache2.conf
 
 # Criar diretórios necessários
 RUN mkdir -p /var/www/html/client/custom/res/css \
