@@ -1,0 +1,15 @@
+{
+    "entity": true,
+    "tab": true,
+    "acl": true,
+    "customizable": true,
+    "importable": false,
+    "exportable": true,
+    "layouts": true,
+    "textFilterFields": ["name", "status"],
+    "fullTextSearch": false,
+    "kanban": true,
+    "statusField": "status",
+    "color": "#28a745",
+    "iconClass": "fas fa-file-export"
+}

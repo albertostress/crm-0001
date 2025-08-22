@@ -1,0 +1,144 @@
+{
+    "fields": {
+        "name": {
+            "type": "varchar",
+            "required": true,
+            "trim": true,
+            "maxLength": 100
+        },
+        "companyName": {
+            "type": "varchar",
+            "required": true,
+            "maxLength": 200,
+            "tooltip": "Nome oficial da empresa conforme registo comercial"
+        },
+        "taxRegistrationNumber": {
+            "type": "varchar",
+            "required": true,
+            "maxLength": 20,
+            "tooltip": "Número de Identificação Fiscal (NIF) da empresa"
+        },
+        "vatNumber": {
+            "type": "varchar",
+            "maxLength": 20,
+            "tooltip": "Número de contribuinte do IVA"
+        },
+        "businessStartDate": {
+            "type": "date",
+            "required": true,
+            "tooltip": "Data de início de atividade da empresa"
+        },
+        "fiscalYear": {
+            "type": "int",
+            "required": true,
+            "default": 2025,
+            "min": 2019,
+            "max": 2030,
+            "tooltip": "Ano fiscal para o qual se aplica esta configuração"
+        },
+        "currencyCode": {
+            "type": "enum",
+            "required": true,
+            "default": "AOA",
+            "options": ["AOA", "USD", "EUR"],
+            "tooltip": "Código da moeda principal utilizada pela empresa"
+        },
+        "countryCode": {
+            "type": "enum",
+            "required": true,
+            "default": "AO",
+            "options": ["AO"],
+            "tooltip": "Código do país (Angola)"
+        },
+        "addressDetail": {
+            "type": "text",
+            "required": true,
+            "tooltip": "Endereço completo da sede da empresa"
+        },
+        "city": {
+            "type": "varchar",
+            "required": true,
+            "maxLength": 50,
+            "tooltip": "Cidade onde está localizada a sede"
+        },
+        "region": {
+            "type": "varchar",
+            "required": true,
+            "maxLength": 50,
+            "tooltip": "Província de Angola"
+        },
+        "zipCode": {
+            "type": "varchar",
+            "maxLength": 10,
+            "tooltip": "Código postal"
+        },
+        "softwareCompanyName": {
+            "type": "varchar",
+            "required": true,
+            "default": "EVERTEC CRM",
+            "maxLength": 100,
+            "tooltip": "Nome da empresa desenvolvedora do software"
+        },
+        "softwareName": {
+            "type": "varchar",
+            "required": true,
+            "default": "EspoCRM SAFT-AO",
+            "maxLength": 100,
+            "tooltip": "Nome do software utilizado"
+        },
+        "softwareVersion": {
+            "type": "varchar",
+            "required": true,
+            "default": "1.0",
+            "maxLength": 20,
+            "tooltip": "Versão do software"
+        },
+        "isActive": {
+            "type": "bool",
+            "default": true,
+            "tooltip": "Indica se esta configuração está ativa"
+        },
+        "createdAt": {
+            "type": "datetime",
+            "readOnly": true
+        },
+        "modifiedAt": {
+            "type": "datetime",
+            "readOnly": true
+        },
+        "createdBy": {
+            "type": "link",
+            "entity": "User",
+            "readOnly": true
+        },
+        "modifiedBy": {
+            "type": "link",
+            "entity": "User",
+            "readOnly": true
+        }
+    },
+    "links": {
+        "createdBy": {
+            "type": "belongsTo",
+            "entity": "User"
+        },
+        "modifiedBy": {
+            "type": "belongsTo",
+            "entity": "User"
+        },
+        "saftExports": {
+            "type": "hasMany",
+            "entity": "SaftExport",
+            "foreign": "saftConfig"
+        }
+    },
+    "collection": {
+        "orderBy": "createdAt",
+        "order": "desc"
+    },
+    "indexes": {
+        "fiscalYear": {
+            "columns": ["fiscalYear"]
+        }
+    }
+}

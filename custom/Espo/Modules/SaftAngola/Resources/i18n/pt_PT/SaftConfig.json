@@ -1,0 +1,51 @@
+{
+    "fields": {
+        "name": "Nome",
+        "companyName": "Nome da Empresa",
+        "taxRegistrationNumber": "NIF",
+        "vatNumber": "Número de Contribuinte IVA",
+        "businessStartDate": "Data de Início de Atividade",
+        "fiscalYear": "Ano Fiscal",
+        "currencyCode": "Código da Moeda",
+        "countryCode": "Código do País",
+        "addressDetail": "Endereço Completo",
+        "city": "Cidade",
+        "region": "Província",
+        "zipCode": "Código Postal",
+        "softwareCompanyName": "Empresa do Software",
+        "softwareName": "Nome do Software",
+        "softwareVersion": "Versão do Software",
+        "isActive": "Ativo",
+        "saftExports": "Exportações SAFT"
+    },
+    "links": {
+        "saftExports": "Exportações SAFT"
+    },
+    "tooltips": {
+        "companyName": "Nome oficial da empresa conforme registo comercial",
+        "taxRegistrationNumber": "Número de Identificação Fiscal (NIF) da empresa",
+        "vatNumber": "Número de contribuinte do IVA",
+        "businessStartDate": "Data de início de atividade da empresa",
+        "fiscalYear": "Ano fiscal para o qual se aplica esta configuração",
+        "currencyCode": "Código da moeda principal utilizada pela empresa",
+        "countryCode": "Código do país (Angola)",
+        "addressDetail": "Endereço completo da sede da empresa",
+        "city": "Cidade onde está localizada a sede",
+        "region": "Província de Angola",
+        "zipCode": "Código postal",
+        "softwareCompanyName": "Nome da empresa desenvolvedora do software",
+        "softwareName": "Nome do software utilizado",
+        "softwareVersion": "Versão do software",
+        "isActive": "Indica se esta configuração está ativa"
+    },
+    "options": {
+        "currencyCode": {
+            "AOA": "Kwanza Angolano (AOA)",
+            "USD": "Dólar Americano (USD)",
+            "EUR": "Euro (EUR)"
+        },
+        "countryCode": {
+            "AO": "Angola"
+        }
+    }
+}

@@ -1,0 +1,26 @@
+[
+    {
+        "name": "name",
+        "link": true
+    },
+    {
+        "name": "companyName",
+        "width": "25%"
+    },
+    {
+        "name": "fiscalYear",
+        "width": "10%"
+    },
+    {
+        "name": "currencyCode",
+        "width": "10%"
+    },
+    {
+        "name": "isActive",
+        "width": "10%"
+    },
+    {
+        "name": "createdAt",
+        "width": "15%"
+    }
+]

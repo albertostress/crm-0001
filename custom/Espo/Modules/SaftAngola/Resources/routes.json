@@ -1,0 +1,34 @@
+[
+    {
+        "route": "/SaftExport/action/generateSaft",
+        "method": "post",
+        "params": {
+            "controller": "SaftExport",
+            "action": "generateSaft"
+        }
+    },
+    {
+        "route": "/SaftExport/:id/download",
+        "method": "get",
+        "params": {
+            "controller": "SaftExport",
+            "action": "downloadSaft"
+        }
+    },
+    {
+        "route": "/SaftExport/:id/validate",
+        "method": "post",
+        "params": {
+            "controller": "SaftExport",
+            "action": "validateSaft"
+        }
+    },
+    {
+        "route": "/SaftExport/:id/submitToAgt",
+        "method": "post",
+        "params": {
+            "controller": "SaftExport",
+            "action": "submitToAgt"
+        }
+    }
+]

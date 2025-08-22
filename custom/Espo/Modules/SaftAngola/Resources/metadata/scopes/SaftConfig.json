@@ -1,0 +1,14 @@
+{
+    "entity": true,
+    "tab": true,
+    "acl": true,
+    "customizable": true,
+    "importable": true,
+    "exportable": true,
+    "layouts": true,
+    "textFilterFields": ["name", "companyName", "taxRegistrationNumber"],
+    "fullTextSearch": false,
+    "kanban": false,
+    "color": "#1f4e79",
+    "iconClass": "fas fa-cogs"
+}

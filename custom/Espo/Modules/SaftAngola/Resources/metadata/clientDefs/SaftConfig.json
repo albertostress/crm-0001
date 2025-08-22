@@ -1,0 +1,45 @@
+{
+    "controller": "controllers/record",
+    "iconClass": "fas fa-cogs",
+    "color": "#1f4e79",
+    "recordViews": {
+        "list": "views/record/list",
+        "detail": "views/record/detail",
+        "edit": "views/record/edit"
+    },
+    "defaultSidebarPanel": "default",
+    "sidePanels": {
+        "detail": [
+            {
+                "name": "default",
+                "label": "Overview",
+                "view": "views/record/panels/default-side"
+            }
+        ],
+        "edit": [
+            {
+                "name": "default",
+                "label": "Overview",
+                "view": "views/record/panels/default-side"
+            }
+        ]
+    },
+    "bottomPanels": {
+        "detail": [
+            {
+                "name": "saftExports",
+                "label": "Exportações SAFT",
+                "view": "views/record/panels/relationship",
+                "layout": "listSmall"
+            }
+        ]
+    },
+    "menu": {
+        "list": [
+            {
+                "label": "Nova Configuração",
+                "action": "quickCreate"
+            }
+        ]
+    }
+}

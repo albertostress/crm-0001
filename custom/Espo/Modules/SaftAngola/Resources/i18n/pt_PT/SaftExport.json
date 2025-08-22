@@ -1,0 +1,54 @@
+{
+    "fields": {
+        "name": "Nome",
+        "exportDate": "Data de Exportação",
+        "periodStart": "Início do Período",
+        "periodEnd": "Fim do Período",
+        "status": "Estado",
+        "fileSize": "Tamanho do Ficheiro",
+        "totalInvoices": "Total de Faturas",
+        "totalAccounts": "Total de Contas",
+        "totalProducts": "Total de Produtos",
+        "xmlContent": "Conteúdo XML",
+        "validationErrors": "Erros de Validação",
+        "filePath": "Caminho do Ficheiro",
+        "submittedToAgt": "Submetido à AGT",
+        "submissionDate": "Data de Submissão",
+        "submissionReference": "Referência de Submissão",
+        "saftConfig": "Configuração SAFT"
+    },
+    "links": {
+        "saftConfig": "Configuração SAFT"
+    },
+    "tooltips": {
+        "exportDate": "Data e hora da exportação",
+        "periodStart": "Data de início do período fiscal",
+        "periodEnd": "Data de fim do período fiscal",
+        "status": "Estado da exportação",
+        "fileSize": "Tamanho do ficheiro gerado em bytes",
+        "totalInvoices": "Número total de faturas incluídas",
+        "totalAccounts": "Número total de contas incluídas",
+        "totalProducts": "Número total de produtos incluídos",
+        "xmlContent": "Conteúdo XML gerado (comprimido)",
+        "validationErrors": "Erros de validação XSD encontrados",
+        "filePath": "Caminho do ficheiro no sistema",
+        "submittedToAgt": "Indica se foi submetido à AGT",
+        "submissionDate": "Data de submissão à AGT",
+        "submissionReference": "Referência de submissão AGT",
+        "saftConfig": "Configuração SAFT utilizada"
+    },
+    "options": {
+        "status": {
+            "Processing": "A Processar",
+            "Success": "Sucesso",
+            "Failed": "Falhado",
+            "ValidationError": "Erro de Validação"
+        }
+    },
+    "messages": {
+        "generateSaftConfirmation": "Tem a certeza que deseja gerar um ficheiro SAFT para o período selecionado?",
+        "exportInProgress": "A exportação está em curso. Por favor aguarde...",
+        "exportCompleted": "Exportação SAFT concluída com sucesso!",
+        "exportFailed": "Falha na exportação SAFT. Verifique os erros de validação."
+    }
+}

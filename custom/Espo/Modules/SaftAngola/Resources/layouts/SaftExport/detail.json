@@ -1,0 +1,92 @@
+[
+    {
+        "label": "Informação da Exportação",
+        "rows": [
+            [
+                {
+                    "name": "name",
+                    "fullWidth": true
+                }
+            ],
+            [
+                {
+                    "name": "exportDate"
+                },
+                {
+                    "name": "status"
+                }
+            ],
+            [
+                {
+                    "name": "periodStart"
+                },
+                {
+                    "name": "periodEnd"
+                }
+            ],
+            [
+                {
+                    "name": "saftConfig",
+                    "fullWidth": true
+                }
+            ]
+        ]
+    },
+    {
+        "label": "Estatísticas",
+        "rows": [
+            [
+                {
+                    "name": "totalInvoices"
+                },
+                {
+                    "name": "totalAccounts"
+                }
+            ],
+            [
+                {
+                    "name": "totalProducts"
+                },
+                {
+                    "name": "fileSize"
+                }
+            ]
+        ]
+    },
+    {
+        "label": "Submissão AGT",
+        "rows": [
+            [
+                {
+                    "name": "submittedToAgt"
+                },
+                {
+                    "name": "submissionDate"
+                }
+            ],
+            [
+                {
+                    "name": "submissionReference",
+                    "fullWidth": true
+                }
+            ]
+        ]
+    },
+    {
+        "label": "Ficheiro e Validação",
+        "rows": [
+            [
+                {
+                    "name": "filePath",
+                    "fullWidth": true
+                }
+            ],
+            [
+                {
+                    "name": "validationErrors",
+                    "fullWidth": true
+                }
+            ]
+        ]
+    }
+]

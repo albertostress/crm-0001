@@ -1,0 +1,139 @@
+{
+    "fields": {
+        "name": {
+            "type": "varchar",
+            "required": true,
+            "trim": true,
+            "maxLength": 150
+        },
+        "exportDate": {
+            "type": "datetime",
+            "required": true,
+            "default": "javascript: return this.dateTime.getNow(1);",
+            "tooltip": "Data e hora da exportação"
+        },
+        "periodStart": {
+            "type": "date",
+            "required": true,
+            "tooltip": "Data de início do período fiscal"
+        },
+        "periodEnd": {
+            "type": "date",
+            "required": true,
+            "tooltip": "Data de fim do período fiscal"
+        },
+        "status": {
+            "type": "enum",
+            "required": true,
+            "default": "Processing",
+            "options": ["Processing", "Success", "Failed", "ValidationError"],
+            "style": {
+                "Processing": "warning",
+                "Success": "success", 
+                "Failed": "danger",
+                "ValidationError": "danger"
+            },
+            "tooltip": "Estado da exportação"
+        },
+        "fileSize": {
+            "type": "int",
+            "min": 0,
+            "tooltip": "Tamanho do ficheiro gerado em bytes"
+        },
+        "totalInvoices": {
+            "type": "int",
+            "min": 0,
+            "tooltip": "Número total de faturas incluídas"
+        },
+        "totalAccounts": {
+            "type": "int", 
+            "min": 0,
+            "tooltip": "Número total de contas incluídas"
+        },
+        "totalProducts": {
+            "type": "int",
+            "min": 0,
+            "tooltip": "Número total de produtos incluídos"
+        },
+        "xmlContent": {
+            "type": "text",
+            "tooltip": "Conteúdo XML gerado (comprimido)"
+        },
+        "validationErrors": {
+            "type": "text",
+            "tooltip": "Erros de validação XSD encontrados"
+        },
+        "filePath": {
+            "type": "varchar",
+            "maxLength": 255,
+            "tooltip": "Caminho do ficheiro no sistema"
+        },
+        "submittedToAgt": {
+            "type": "bool",
+            "default": false,
+            "tooltip": "Indica se foi submetido à AGT"
+        },
+        "submissionDate": {
+            "type": "datetime",
+            "tooltip": "Data de submissão à AGT"
+        },
+        "submissionReference": {
+            "type": "varchar",
+            "maxLength": 50,
+            "tooltip": "Referência de submissão AGT"
+        },
+        "saftConfig": {
+            "type": "link",
+            "entity": "SaftConfig",
+            "required": true,
+            "tooltip": "Configuração SAFT utilizada"
+        },
+        "createdAt": {
+            "type": "datetime",
+            "readOnly": true
+        },
+        "modifiedAt": {
+            "type": "datetime",
+            "readOnly": true
+        },
+        "createdBy": {
+            "type": "link",
+            "entity": "User",
+            "readOnly": true
+        },
+        "modifiedBy": {
+            "type": "link",
+            "entity": "User",
+            "readOnly": true
+        }
+    },
+    "links": {
+        "saftConfig": {
+            "type": "belongsTo",
+            "entity": "SaftConfig"
+        },
+        "createdBy": {
+            "type": "belongsTo",
+            "entity": "User"
+        },
+        "modifiedBy": {
+            "type": "belongsTo",
+            "entity": "User"
+        }
+    },
+    "collection": {
+        "orderBy": "exportDate",
+        "order": "desc"
+    },
+    "indexes": {
+        "periodStart": {
+            "columns": ["periodStart"]
+        },
+        "periodEnd": {
+            "columns": ["periodEnd"]
+        },
+        "status": {
+            "columns": ["status"]
+        }
+    }
+}

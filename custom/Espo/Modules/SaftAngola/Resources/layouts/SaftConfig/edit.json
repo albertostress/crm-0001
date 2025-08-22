@@ -1,0 +1,89 @@
+[
+    {
+        "label": "Informação da Empresa",
+        "rows": [
+            [
+                {
+                    "name": "name",
+                    "fullWidth": true
+                }
+            ],
+            [
+                {
+                    "name": "companyName",
+                    "fullWidth": true
+                }
+            ],
+            [
+                {
+                    "name": "taxRegistrationNumber"
+                },
+                {
+                    "name": "vatNumber"
+                }
+            ],
+            [
+                {
+                    "name": "businessStartDate"
+                },
+                {
+                    "name": "fiscalYear"
+                }
+            ],
+            [
+                {
+                    "name": "currencyCode"
+                },
+                {
+                    "name": "countryCode"
+                }
+            ]
+        ]
+    },
+    {
+        "label": "Endereço",
+        "rows": [
+            [
+                {
+                    "name": "addressDetail",
+                    "fullWidth": true
+                }
+            ],
+            [
+                {
+                    "name": "city"
+                },
+                {
+                    "name": "region"
+                }
+            ],
+            [
+                {
+                    "name": "zipCode"
+                },
+                false
+            ]
+        ]
+    },
+    {
+        "label": "Informação do Software",
+        "rows": [
+            [
+                {
+                    "name": "softwareCompanyName"
+                },
+                {
+                    "name": "softwareName"
+                }
+            ],
+            [
+                {
+                    "name": "softwareVersion"
+                },
+                {
+                    "name": "isActive"
+                }
+            ]
+        ]
+    }
+]

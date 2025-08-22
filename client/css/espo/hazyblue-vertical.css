@@ -1,0 +1,62 @@
+/* EVERTEC CRM - Hazy Blue Vertical Theme */
+/* This theme provides a clean vertical layout with blue accent colors */
+
+:root {
+    --primary-color: #1f4e79;
+    --secondary-color: #28a745;
+    --accent-color: #007bff;
+    --background-color: #f8f9fa;
+    --text-color: #333;
+}
+
+.navbar {
+    background-color: var(--primary-color) !important;
+}
+
+.navbar-brand {
+    color: white !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #164063;
+    border-color: #164063;
+}
+
+.panel-heading {
+    background-color: var(--background-color);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.sidebar {
+    background-color: var(--background-color);
+}
+
+.nav-pills > li.active > a {
+    background-color: var(--primary-color);
+}
+
+/* SAFT Module specific styling */
+.saft-config-panel {
+    border-left: 4px solid var(--primary-color);
+}
+
+.saft-export-status {
+    font-weight: bold;
+}
+
+.saft-export-status.success {
+    color: var(--secondary-color);
+}
+
+.saft-export-status.failed {
+    color: #dc3545;
+}
+
+.saft-export-status.processing {
+    color: #ffc107;
+}

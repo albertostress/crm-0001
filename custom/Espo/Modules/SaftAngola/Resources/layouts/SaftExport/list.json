@@ -1,0 +1,30 @@
+[
+    {
+        "name": "name",
+        "link": true
+    },
+    {
+        "name": "status",
+        "width": "12%"
+    },
+    {
+        "name": "periodStart",
+        "width": "12%"
+    },
+    {
+        "name": "periodEnd",
+        "width": "12%"
+    },
+    {
+        "name": "totalInvoices",
+        "width": "10%"
+    },
+    {
+        "name": "submittedToAgt",
+        "width": "10%"
+    },
+    {
+        "name": "exportDate",
+        "width": "15%"
+    }
+]

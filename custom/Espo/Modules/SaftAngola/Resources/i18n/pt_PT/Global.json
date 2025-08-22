@@ -1,0 +1,20 @@
+{
+    "scopeNames": {
+        "SaftConfig": "Configuração SAFT",
+        "SaftExport": "Exportação SAFT"
+    },
+    "scopeNamesPlural": {
+        "SaftConfig": "Configurações SAFT",
+        "SaftExport": "Exportações SAFT"
+    },
+    "labels": {
+        "SAFT Angola": "SAFT Angola",
+        "Generate SAFT": "Gerar SAFT",
+        "Export to AGT": "Exportar para AGT",
+        "Validation Errors": "Erros de Validação",
+        "Company Configuration": "Configuração da Empresa",
+        "Export History": "Histórico de Exportações",
+        "Fiscal Period": "Período Fiscal",
+        "Export Status": "Estado da Exportação"
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "controller": "controllers/record",
+    "iconClass": "fas fa-file-export",
+    "color": "#28a745",
+    "recordViews": {
+        "list": "views/record/list",
+        "detail": "views/record/detail",
+        "edit": "views/record/edit"
+    },
+    "defaultSidebarPanel": "default",
+    "sidePanels": {
+        "detail": [
+            {
+                "name": "default",
+                "label": "Overview",
+                "view": "views/record/panels/default-side"
+            }
+        ],
+        "edit": [
+            {
+                "name": "default",
+                "label": "Overview",
+                "view": "views/record/panels/default-side"
+            }
+        ]
+    },
+    "dynamicHandler": "custom:saft-export-handler",
+    "menu": {
+        "list": [
+            {
+                "label": "Nova Exportação",
+                "action": "quickCreate"
+            },
+            {
+                "label": "Gerar SAFT",
+                "action": "generateSaft",
+                "acl": "create"
+            }
+        ]
+    },
+    "massActions": {
+        "export": true,
+        "merge": false,
+        "massUpdate": false,
+        "remove": true
+    }
+}

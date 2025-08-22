@@ -1,0 +1,7 @@
+{
+    "order": 20,
+    "version": "1.0.0",
+    "description": "Módulo SAFT Angola - Geração de ficheiros fiscais SAFT-AO para conformidade com AGT Angola",
+    "author": "EVERTEC CRM",
+    "dependencies": []
+}
