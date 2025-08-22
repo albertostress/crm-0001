@@ -24,7 +24,6 @@
             }
         ]
     },
-    "dynamicHandler": "custom:saft-export-handler",
     "menu": {
         "list": [
             {
