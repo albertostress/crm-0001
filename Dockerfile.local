@@ -1,0 +1,38 @@
+# Dockerfile simplificado para desenvolvimento local
+# Usa imagem pronta do EspoCRM (muito mais rápido!)
+FROM espocrm/espocrm:latest
+
+# Configurações do Apache
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Criar diretórios necessários
+RUN mkdir -p /var/www/html/client/custom/res/css \
+             /var/www/html/client/custom/lib \
+             /var/www/html/custom/Espo/Custom/Resources/metadata/app
+
+# Adicionar arquivos de branding EVERTEC
+# CSS customizado
+COPY --chown=www-data:www-data client/custom/res/css/custom.css /var/www/html/client/custom/res/css/custom.css
+
+# JavaScript customizado
+COPY --chown=www-data:www-data client/custom/lib/custom-footer.js /var/www/html/client/custom/lib/custom-footer.js
+
+# Metadata para incluir os arquivos
+COPY --chown=www-data:www-data custom/Espo/Custom/Resources/metadata/app/client.json /var/www/html/custom/Espo/Custom/Resources/metadata/app/client.json
+
+# Script para remover watermarks do EspoCRM
+RUN find /var/www/html -type f \( -name "*.php" -o -name "*.tpl" -o -name "*.js" \) -exec \
+    sed -i 's/EspoCRM/EVERTEC CRM/g; s/espocrm\.com/evertec\.com/g' {} \; 2>/dev/null || true
+
+# Permissões
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 /var/www/html
+
+# Health check simples
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost/ || exit 1
+
+EXPOSE 80
+
+# Comando de início
+CMD ["apache2-foreground"]
