@@ -115,10 +115,12 @@ WORKDIR /var/www/html
 # Copy built application from build stage
 COPY --from=build --chown=www-data:www-data /var/www/html .
 
-# Create EVERTEC branding customizations directly
+# Create EVERTEC branding customizations directly (EARLY)
 RUN mkdir -p /var/www/html/client/custom/res/css \
     && mkdir -p /var/www/html/client/custom/lib \
-    && mkdir -p /var/www/html/custom/Espo/Custom/Resources/metadata/app
+    && mkdir -p /var/www/html/custom/Espo/Custom/Resources/metadata/app \
+    && chown -R www-data:www-data /var/www/html/client/custom \
+    && chown -R www-data:www-data /var/www/html/custom
 
 # Create custom CSS file
 COPY <<'EOF' /var/www/html/client/custom/res/css/custom.css
@@ -566,6 +568,46 @@ echo "🧹 Clearing all caches..."
 rm -rf /var/www/html/data/cache/* 2>/dev/null || true
 rm -rf /var/www/html/client/lib/templates.tpl 2>/dev/null || true
 rm -rf /var/www/html/data/upload/thumbnails/* 2>/dev/null || true
+
+# ENSURE: Recreate custom files if they don't exist after cache clear
+echo "🔄 Ensuring EVERTEC custom files exist..."
+if [ ! -f /var/www/html/client/custom/res/css/custom.css ]; then
+    echo "❌ Custom CSS missing, recreating..."
+    mkdir -p /var/www/html/client/custom/res/css
+    cat > /var/www/html/client/custom/res/css/custom.css << 'EOFCSS'
+/* EVERTEC Branding - Auto-restored by entrypoint */
+.credit.small a, p.credit.small a, .credit a, footer .credit a, #footer .credit a { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+.credit.small, p.credit.small, .credit, footer .credit, #footer .credit { font-size: 0 !important; color: transparent !important; }
+.credit.small::after, p.credit.small::after, .credit::after, footer .credit::after, #footer .credit::after { content: "© 2025 EVERTEC CRM — Todos os direitos reservados" !important; font-size: 12px !important; color: #999 !important; display: inline !important; visibility: visible !important; }
+EOFCSS
+fi
+
+if [ ! -f /var/www/html/client/custom/lib/custom-footer.js ]; then
+    echo "❌ Custom JS missing, recreating..."
+    mkdir -p /var/www/html/client/custom/lib
+    cat > /var/www/html/client/custom/lib/custom-footer.js << 'EOFJS'
+/* EVERTEC Branding JavaScript - Auto-restored by entrypoint */
+(function() {
+    function replaceText() { document.querySelectorAll('*').forEach(function(el) { if (el.children.length === 0 && el.textContent.includes('EspoCRM')) { el.textContent = el.textContent.replace(/EspoCRM/g, 'EVERTEC CRM'); } }); }
+    function hideWatermarks() { ['a[href*="espocrm.com"]', '.credit a'].forEach(function(sel) { document.querySelectorAll(sel).forEach(function(el) { el.style.display = 'none'; }); }); }
+    function apply() { replaceText(); hideWatermarks(); }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', apply); } else { apply(); }
+    setInterval(apply, 500);
+    window.evertecBrandingStatus = function() { return 'ACTIVE'; };
+})();
+EOFJS
+fi
+
+if [ ! -f /var/www/html/custom/Espo/Custom/Resources/metadata/app/client.json ]; then
+    echo "❌ Custom metadata missing, recreating..."
+    mkdir -p /var/www/html/custom/Espo/Custom/Resources/metadata/app
+    cat > /var/www/html/custom/Espo/Custom/Resources/metadata/app/client.json << 'EOFJSON'
+{"cssFileList":["client/custom/res/css/custom.css"],"scriptList":["client/custom/lib/custom-footer.js"]}
+EOFJSON
+fi
+
+# Set ownership again
+chown -R www-data:www-data /var/www/html/client/custom /var/www/html/custom
 
 # Create templates.tpl file if it doesn't exist
 echo "📄 Creating templates file..."
